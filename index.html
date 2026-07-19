@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0C1440">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Five Crowns">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230C1440'/%3E%3Ctext x='50' y='68' font-size='58' text-anchor='middle' fill='%23E8C766'%3E%E2%99%9B%3C/text%3E%3C/svg%3E">
 <title>Five Crowns Scorekeeper</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
@@ -146,6 +151,7 @@
   .btn-gold:disabled{filter:grayscale(.65) brightness(.92); cursor:default; transform:none;}
   .btn-quiet{background:#EFE8D4; color:var(--ink-soft); font-weight:600;}
   .btn-quiet:hover{background:#E4DBC1;}
+  .btn-danger-text{background:none; color:var(--heart); font-weight:600; font-size:14px; padding:10px;}
   .btn-red{
     background:linear-gradient(180deg, #E05055 0%, var(--heart) 60%, #A01B21 100%);
     color:#FFF; box-shadow:0 3px 10px rgba(0,0,0,.3);
@@ -287,26 +293,10 @@
   .winner-panel .wname{font-family:var(--display); font-size:28px; font-weight:900;}
   .winner-panel .wscore{color:var(--ink-soft); margin-top:2px; margin-bottom:6px;}
 
-  /* ---------- Save & resume ---------- */
-  .code-box{
-    width:100%; font-family:ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-    font-size:13px; padding:11px 12px; border:1.5px solid #D5CCB4; border-radius:9px;
-    background:#FFFDF6; color:var(--ink); word-break:break-all; resize:none; line-height:1.4;
-  }
-  .code-box:focus{outline:none; border-color:var(--gold-mid); box-shadow:0 0 0 3px rgba(212,169,60,.28);}
-  .code-actions{display:flex; gap:10px;}
-  .code-actions .btn{flex:1;}
-  .code-feedback{font-size:13px; font-weight:700; margin-top:10px; text-align:center;}
-  .code-feedback.good{color:var(--ok);}
-  .code-feedback.bad{color:var(--heart);}
-  details.resume{margin-top:16px;}
-  details.resume summary{
-    cursor:pointer; font-weight:700; font-size:14px; color:var(--ink-soft);
-    list-style:none; display:flex; align-items:center; gap:6px;
-  }
-  details.resume summary::before{content:'▸'; transition:transform .15s; font-size:12px;}
-  details.resume[open] summary::before{transform:rotate(90deg);}
-  details.resume .inner{margin-top:12px;}
+  /* ---------- Polish ---------- */
+  .behind{font-size:12px; color:var(--ink-soft); font-variant-numeric:tabular-nums; margin-left:6px; font-weight:600;}
+  .sc-crown{font-size:10px; margin-left:2px; color:var(--gold-deep);}
+  .winner-panel .btn{max-width:320px; margin-left:auto; margin-right:auto;}
 
   /* ---------- Modal ---------- */
   .modal-overlay{
@@ -364,15 +354,6 @@
     <div id="playerInputs"></div>
     <button class="btn btn-quiet" id="addPlayerBtn" type="button">+ Add player</button>
     <button class="btn btn-gold" id="startBtn" type="button">Deal the first hand</button>
-
-    <details class="resume" id="resumeDetails">
-      <summary>Have a game code? Resume here</summary>
-      <div class="inner">
-        <textarea class="code-box" id="resumeInput" rows="3" placeholder="Paste your game code…" spellcheck="false" autocapitalize="off" autocorrect="off"></textarea>
-        <button class="btn btn-gold" id="resumeBtn" type="button">Resume game</button>
-        <div class="code-feedback hidden" id="resumeFeedback"></div>
-      </div>
-    </details>
   </section>
 
   <!-- GAME -->
@@ -414,25 +395,15 @@
     <h2 style="font-size:14px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft); font-family:var(--body); font-weight:700;">Champion</h2>
     <div class="wname" id="winnerName"></div>
     <div class="wscore" id="winnerScore"></div>
-  </section>
-
-  <!-- SAVE & RESUME -->
-  <section class="panel hidden" id="savePanel">
-    <h2>Save this game</h2>
-    <p class="sub">Copy this code (or download it). Paste it on the start screen anytime to pick up exactly where you left off.</p>
-    <textarea class="code-box" id="saveCode" rows="3" readonly spellcheck="false"></textarea>
-    <div class="code-actions">
-      <button class="btn btn-gold" id="copyCodeBtn" type="button">Copy code</button>
-      <button class="btn btn-quiet" id="downloadCodeBtn" type="button">Download</button>
-    </div>
-    <div class="code-feedback hidden" id="copyFeedback"></div>
+    <button class="btn btn-gold" id="rematchBtn" type="button">♛ Rematch — same players</button>
   </section>
 
   <div id="gameControls" class="hidden">
     <button class="btn btn-quiet" id="newGameBtn" type="button">Start a new game</button>
+    <button class="btn btn-danger-text" id="resetBtn" type="button">Erase saved data</button>
   </div>
 
-  <p class="center-note">Nothing is stored anywhere — your game lives in the code above.<br>Grab it before you close this page.</p>
+  <p class="center-note">Saves automatically on this device after every entry.<br>Close anytime — your game will be here when you're back.</p>
 </div>
 
 <div class="modal-overlay hidden" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
@@ -473,6 +444,32 @@
   var state = freshState();
   var viewRound = 0;
 
+  // ---------- Browser auto-save (localStorage) ----------
+  var LS_KEY = 'fiveCrownsSave';
+  var canStore = false;
+  try{
+    localStorage.setItem('__fc_test','1');
+    localStorage.removeItem('__fc_test');
+    canStore = true;
+  }catch(e){ /* private browsing or storage blocked — game code still works */ }
+
+  function persist(){
+    if(!canStore) return;
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
+  }
+  function loadSaved(){
+    if(!canStore) return;
+    try{
+      var raw = localStorage.getItem(LS_KEY);
+      if(raw){
+        var p = JSON.parse(raw);
+        if(p && p.screen && Array.isArray(p.setupNames) && Array.isArray(p.players)){
+          state = p;
+        }
+      }
+    }catch(e){ /* corrupt save — start fresh */ }
+  }
+
   function freshState(){
     return {
       screen:'setup',              // setup | game | done
@@ -481,71 +478,6 @@
       currentRound:0,
       setupNames:['','']
     };
-  }
-
-  // ---------- Game code (save/resume string) ----------
-  // Format: FC1|<g|d>|<currentRound>|Name1,Name2|r0;r1;...  where each r is comma-joined scores ('' = blank)
-  function cleanName(n){
-    return n.replace(/[|,;]/g,' ').replace(/\s+/g,' ').trim().slice(0,20);
-  }
-  function encodeGame(){
-    var names = state.players.map(function(p){ return cleanName(p.name); }).join(',');
-    var rounds = [];
-    var last = -1;
-    for(var r=0;r<ROUNDS.length;r++){
-      var row = state.scores[r];
-      if(row){
-        for(var i=0;i<state.players.length;i++){
-          if(typeof row[state.players[i].id]==='number'){ last = r; break; }
-        }
-      }
-    }
-    var upto = Math.max(last, state.currentRound);
-    for(var r2=0;r2<=upto;r2++){
-      var row2 = state.scores[r2] || {};
-      rounds.push(state.players.map(function(p){
-        var v = row2[p.id];
-        return (typeof v==='number') ? v : '';
-      }).join(','));
-    }
-    return ['FC1', state.screen==='done'?'d':'g', state.currentRound, names, rounds.join(';')].join('|');
-  }
-  function decodeGame(code){
-    var c = String(code||'').trim();
-    if(!c) return {err:'The code is empty.'};
-    var parts = c.split('|');
-    if(parts.length<4 || parts[0]!=='FC1') return {err:'That doesn\u2019t look like a Five Crowns game code. It should start with "FC1|".'};
-    var screen = parts[1]==='d' ? 'done' : 'game';
-    var curRound = Math.min(Math.max(parseInt(parts[2],10)||0, 0), ROUNDS.length-1);
-    var names = parts[3].split(',').map(function(n){ return cleanName(n); }).filter(Boolean);
-    if(names.length<2 || names.length>7) return {err:'The code must contain 2\u20137 player names.'};
-    var players = names.map(function(n,i){ return {id:'p'+(i+1), name:n}; });
-    var scores = {};
-    if(parts[4]){
-      var roundStrs = parts[4].split(';');
-      for(var r=0;r<roundStrs.length && r<ROUNDS.length;r++){
-        var vals = roundStrs[r].split(',');
-        var row = {};
-        var any = false;
-        for(var i2=0;i2<players.length;i2++){
-          var raw = (vals[i2]||'').trim();
-          if(raw!==''){
-            var n2 = parseInt(raw,10);
-            if(!isNaN(n2) && n2>=0){ row[players[i2].id] = n2; any = true; }
-          }
-        }
-        if(any) scores[r] = row;
-      }
-    }
-    return {state:{screen:screen, players:players, scores:scores, currentRound:curRound, setupNames:names.slice()}};
-  }
-  function refreshSaveCode(){
-    var s = state.screen;
-    var showIt = (s==='game' || s==='done') && state.players.length>0;
-    show('savePanel', showIt);
-    if(showIt){
-      document.getElementById('saveCode').value = encodeGame();
-    }
   }
 
   // ---------- Helpers ----------
@@ -602,7 +534,7 @@
     show('setupPanel',     s==='setup');
     show('railWrap',       s==='game' || s==='done');
     show('gamePanel',      s==='game');
-    show('standingsPanel', s==='game' || s==='done');
+    show('standingsPanel', (s==='game' || s==='done') && roundsScoredCount()>0);
     show('winnerPanel',    s==='done');
     show('scorecardPanel', (s==='game' || s==='done') && roundsScoredCount()>0);
     show('gameControls',   s==='game' || s==='done');
@@ -611,7 +543,7 @@
     if(s==='game' || s==='done'){ renderRail(); renderStandings(); renderScorecard(); }
     if(s==='game') renderGame();
     if(s==='done') renderWinner();
-    refreshSaveCode();
+    persist();
   }
 
   // --- Setup ---
@@ -646,6 +578,7 @@
         }
         state.setupNames[i] = v;
         updateStartBtn();
+        persist();
       });
       row.appendChild(input);
 
@@ -704,6 +637,30 @@
   }
 
   // --- Game / score entry ---
+  function missingCount(r){
+    var n = 0;
+    var row = state.scores[r] || {};
+    state.players.forEach(function(p){
+      if(typeof row[p.id] !== 'number') n++;
+    });
+    return n;
+  }
+  function updateAdvanceBtn(){
+    var advBtn = document.getElementById('advanceBtn');
+    var missing = missingCount(viewRound);
+    var isPast = viewRound < state.currentRound;
+    advBtn.disabled = missing > 0;
+    if(missing > 0){
+      advBtn.textContent = 'Waiting on ' + missing + (missing===1 ? ' score…' : ' scores…');
+    } else if(isPast){
+      advBtn.textContent = 'Save changes';
+    } else if(viewRound === ROUNDS.length-1){
+      advBtn.textContent = 'Score final round & crown the winner';
+    } else {
+      advBtn.textContent = 'Score round & deal next';
+    }
+  }
+
   function renderGame(){
     var r = ROUNDS[viewRound];
     var suit = suitFor(viewRound);
@@ -720,14 +677,7 @@
     document.getElementById('editNote').classList.toggle('hidden', !isPast);
     document.getElementById('backToCurrentBtn').classList.toggle('hidden', !isPast);
 
-    var advBtn = document.getElementById('advanceBtn');
-    if(isPast){
-      advBtn.textContent = 'Save changes';
-    } else if(viewRound === ROUNDS.length-1){
-      advBtn.textContent = 'Score final round & crown the winner';
-    } else {
-      advBtn.textContent = 'Score round & deal next';
-    }
+    updateAdvanceBtn();
 
     var wrap = document.getElementById('scoreRows');
     wrap.innerHTML='';
@@ -784,7 +734,8 @@
         syncOutBtn();
         renderStandings();
         renderScorecard();
-        refreshSaveCode();
+        updateAdvanceBtn();
+        persist();
       });
 
       outBtn.addEventListener('click', function(){
@@ -801,7 +752,8 @@
         syncOutBtn();
         renderStandings();
         renderScorecard();
-        refreshSaveCode();
+        updateAdvanceBtn();
+        persist();
       });
 
       row.appendChild(name);
@@ -814,27 +766,31 @@
 
   // --- Standings ---
   function renderStandings(){
+    var s = state.screen;
+    show('standingsPanel', (s==='game' || s==='done') && roundsScoredCount()>0);
     var wrap = document.getElementById('standingsRows');
     wrap.innerHTML='';
     var done = roundsScoredCount();
     document.getElementById('standingsSub').textContent =
-      done===0 ? 'No rounds scored yet.' :
       done + ' of 11 rounds scored · lowest total wins.';
 
     var ranked = state.players.slice().sort(function(a,b){
       return totalFor(a.id) - totalFor(b.id);
     });
     var lead = leaders();
+    var best = ranked.length ? totalFor(ranked[0].id) : 0;
     ranked.forEach(function(p, i){
       var idx = state.players.indexOf(p);
       var psuit = suitFor(idx);
       var row = document.createElement('div');
       row.className='score-row';
       var isFirst = lead.indexOf(p.id)>=0;
+      var t = totalFor(p.id);
+      var behind = (!isFirst && t>best) ? '<span class="behind">+'+(t-best)+'</span>' : '';
       row.innerHTML =
-        '<div class="pos'+(isFirst?' first':'')+'">'+(i+1)+'</div>'+
+        '<div class="pos'+(isFirst?' first':'')+'">'+(isFirst?'♛':(i+1))+'</div>'+
         '<div class="pname"><span class="psuit '+psuit.cls+'" aria-hidden="true">'+psuit.sym+'</span><span class="nm">'+esc(p.name)+'</span></div>'+
-        '<div class="grand">'+totalFor(p.id)+'</div>';
+        '<div class="grand">'+t+behind+'</div>';
       wrap.appendChild(row);
     });
   }
@@ -884,9 +840,14 @@
         var row = state.scores[i];
         var v = row ? row[p.id] : undefined;
         if(typeof v==='number'){
-          td.textContent = v;
-          td.className = 'num' + (v===0 ? ' zero' : '');
-          if(v===0) td.title = 'Went out';
+          if(v===0){
+            td.innerHTML = '0<span class="sc-crown" aria-hidden="true">♛</span>';
+            td.className = 'num zero';
+            td.title = 'Went out';
+          } else {
+            td.textContent = v;
+            td.className = 'num';
+          }
         } else {
           td.textContent = '·';
           td.className = 'blank';
@@ -979,64 +940,15 @@
     overlay.onclick = function(e){ if(e.target===overlay) close(); };
   }
 
-  // ---------- Copy / download / resume ----------
-  function flashFeedback(id, msg, good){
-    var el = document.getElementById(id);
-    el.textContent = msg;
-    el.className = 'code-feedback ' + (good ? 'good' : 'bad');
-    el.classList.remove('hidden');
-    if(good){
-      setTimeout(function(){ el.classList.add('hidden'); }, 2500);
-    }
-  }
-
-  document.getElementById('copyCodeBtn').addEventListener('click', function(){
-    var box = document.getElementById('saveCode');
-    box.focus();
-    box.select();
-    box.setSelectionRange(0, box.value.length);
-    var done = false;
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(box.value).then(function(){
-        flashFeedback('copyFeedback','Copied — paste it anywhere safe.', true);
-      }).catch(function(){
-        fallbackCopy();
-      });
-      done = true;
-    }
-    if(!done) fallbackCopy();
-    function fallbackCopy(){
-      var ok = false;
-      try{ ok = document.execCommand('copy'); }catch(e){}
-      flashFeedback('copyFeedback', ok ? 'Copied — paste it anywhere safe.' : 'Couldn\u2019t auto-copy. The code is selected — copy it manually.', ok);
-    }
-  });
-
-  document.getElementById('downloadCodeBtn').addEventListener('click', function(){
-    try{
-      var code = document.getElementById('saveCode').value;
-      var blob = new Blob([code + '\n'], {type:'text/plain'});
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      var d = new Date();
-      a.download = 'five-crowns-' + d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + '.txt';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
-    }catch(e){
-      flashFeedback('copyFeedback','Download blocked here — use Copy code instead.', false);
-    }
-  });
-
-  document.getElementById('resumeBtn').addEventListener('click', function(){
-    var result = decodeGame(document.getElementById('resumeInput').value);
-    if(result.err){
-      flashFeedback('resumeFeedback', result.err, false);
-      return;
-    }
-    state = result.state;
-    viewRound = state.screen==='done' ? state.currentRound : state.currentRound;
-    if(state.screen==='done'){ /* stays done; winner shows */ }
+  // ---------- Rematch ----------
+  document.getElementById('rematchBtn').addEventListener('click', function(){
+    var keepNames = state.players.map(function(p){ return p.name; });
+    state = freshState();
+    state.setupNames = keepNames.slice();
+    state.players = keepNames.map(function(n, i){ return {id:'p'+(i+1), name:n}; });
+    state.screen = 'game';
+    state.currentRound = 0;
+    viewRound = 0;
     render();
     window.scrollTo({top:0, behavior:'smooth'});
   });
@@ -1083,6 +995,7 @@
       state.currentRound++;
       viewRound = state.currentRound;
       render();
+      window.scrollTo({top:0, behavior:'smooth'});
     }
   });
 
@@ -1113,7 +1026,25 @@
     }
   });
 
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    showModal({
+      title:'Erase saved data?',
+      message:'This clears the current game and the save stored in this browser. It can\u2019t be undone — copy the backup code first if you might want it back.',
+      confirmLabel:'Erase it',
+      danger:true,
+      onConfirm:function(){
+        if(canStore){ try{ localStorage.removeItem(LS_KEY); }catch(e){} }
+        state = freshState();
+        viewRound = 0;
+        render();
+        window.scrollTo({top:0, behavior:'smooth'});
+      }
+    });
+  });
+
   // ---------- Boot ----------
+  loadSaved();
+  viewRound = state.currentRound;
   render();
 })();
 </script>
