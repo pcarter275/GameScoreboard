@@ -46,48 +46,55 @@
   .deck{display:flex; flex-direction:column; gap:16px; margin-top:14px;}
   .game{
     position:relative; display:flex; align-items:center; gap:16px; text-align:left; width:100%;
-    border:1px solid var(--line); border-radius:20px; padding:18px 18px; cursor:pointer;
+    border:1px solid var(--line); border-radius:20px; padding:18px; cursor:pointer;
     color:var(--ink); background:linear-gradient(180deg,var(--bg2),#100c1c);
-    box-shadow:0 12px 30px rgba(4,2,12,.5); overflow:hidden;
+    box-shadow:0 12px 30px rgba(4,2,12,.5); overflow:hidden; touch-action:manipulation;
     transition:transform .15s, box-shadow .2s, border-color .2s;
   }
-  .game::before{ /* themed wash */
+  .game::before{
     content:""; position:absolute; inset:0; opacity:.16; pointer-events:none;
     background:radial-gradient(220px 160px at 14% 30%, var(--accent), transparent 70%);
   }
-  .game:hover{transform:translateY(-3px); box-shadow:0 18px 40px rgba(4,2,12,.6); border-color:var(--gold-deep,#5a4a86);}
+  .game:hover{transform:translateY(-3px); box-shadow:0 18px 40px rgba(4,2,12,.6); border-color:#5a4a86;}
   .game:active{transform:translateY(-1px) scale(.995);}
   .game .ic{
     flex:0 0 auto; width:62px; height:62px; border-radius:16px; position:relative; z-index:1;
     box-shadow:0 6px 16px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.06);
   }
   .game .body{flex:1; min-width:0; position:relative; z-index:1;}
-  .game .nm{font-family:var(--display); font-weight:700; font-size:22px; letter-spacing:.02em;}
-  .game .ds{color:var(--soft); font-size:14px; line-height:1.4; margin-top:4px;}
-  .game .go{
-    flex:0 0 auto; position:relative; z-index:1; color:var(--gold);
-    font-size:26px; opacity:.8; transition:transform .15s, opacity .15s;
-  }
+  .game .nm{font-family:var(--display); font-weight:700; font-size:22px; letter-spacing:.02em; display:block;}
+  .game .ds{color:var(--soft); font-size:14px; line-height:1.4; margin-top:4px; display:block;}
+  .game .go{flex:0 0 auto; position:relative; z-index:1; color:var(--gold); font-size:26px; opacity:.8; transition:transform .15s, opacity .15s;}
   .game:hover .go{transform:translateX(3px); opacity:1;}
   .foot{text-align:center; color:var(--faint); font-size:13px; margin-top:30px; line-height:1.5;}
   .foot b{color:var(--soft); font-weight:700;}
 
   /* ---------- player (embedded game) ---------- */
-  #player{position:fixed; inset:0; z-index:50; display:none; flex-direction:column; background:var(--bg);}
+  #player{
+    position:fixed; top:0; left:0; right:0; bottom:0;
+    z-index:50; display:none; flex-direction:column; background:var(--bg);
+  }
   #player.on{display:flex;}
   #topbar{
-    flex:0 0 auto; display:flex; align-items:center; gap:10px;
-    padding:max(8px,env(safe-area-inset-top)) 12px 8px; padding-left:max(12px,env(safe-area-inset-left));
-    background:rgba(12,9,22,.9); backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
+    flex:0 0 auto; position:relative; z-index:2;
+    display:flex; align-items:center; gap:10px;
+    padding:max(8px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 8px max(12px,env(safe-area-inset-left));
+    background:rgba(12,9,22,.94); border-bottom:1px solid var(--line);
   }
   #backBtn{
-    display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line); background:rgba(255,255,255,.03);
-    color:var(--ink); font-family:var(--body); font-weight:700; font-size:14.5px; letter-spacing:.02em;
-    border-radius:11px; padding:8px 13px 8px 11px; cursor:pointer;
+    display:inline-flex; align-items:center; gap:7px; min-height:44px;
+    border:1px solid var(--line); background:rgba(255,255,255,.04);
+    color:var(--ink); font-family:var(--body); font-weight:700; font-size:15px; letter-spacing:.02em;
+    border-radius:12px; padding:8px 15px 8px 12px; cursor:pointer;
+    touch-action:manipulation; user-select:none; -webkit-user-select:none;
   }
   #backBtn:hover{border-color:var(--gold); color:var(--gold-hi);}
-  #backBtn svg{width:15px; height:15px;}
-  #frameTitle{font-family:var(--display); font-weight:700; font-size:15px; letter-spacing:.08em; color:var(--gold); text-transform:uppercase;}
+  #backBtn:active{background:rgba(228,197,120,.14);}
+  #backBtn svg{width:16px; height:16px; flex:0 0 auto;}
+  #frameTitle{
+    font-family:var(--display); font-weight:700; font-size:15px; letter-spacing:.08em;
+    color:var(--gold); text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
   #frames{position:relative; flex:1 1 auto; min-height:0;}
   #frames iframe{position:absolute; inset:0; width:100%; height:100%; border:0; display:none; background:var(--bg);}
   #frames iframe.on{display:block;}
@@ -107,8 +114,8 @@
 
 <section id="player" aria-hidden="true">
   <div id="topbar">
-    <button id="backBtn" aria-label="Back to game list">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    <button id="backBtn" type="button" aria-label="Back to game list">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
       Games
     </button>
     <span id="frameTitle"></span>
@@ -3049,18 +3056,27 @@
 <script>
 (function(){
   "use strict";
-  var CARDS = [{"id": "wizard", "name": "Wizard", "desc": "Bid your tricks, then land the number exactly.", "bg": "#14102A", "accent": "#7B67D9", "gold": "#E9C15C", "icon": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%2314102A'/%3E%3Cpath d='M50 14 L64 52 L36 52 Z' fill='%237B67D9'/%3E%3Cpath d='M28 56 Q50 46 72 56 L72 64 Q50 56 28 64 Z' fill='%23E9C15C'/%3E%3Ctext x='50' y='90' font-size='26' text-anchor='middle' fill='%23E9C15C'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E"}, {"id": "crowns", "name": "Five Crowns", "desc": "Eleven rounds, the wild climbs with every deal.", "bg": "#0C1440", "accent": "#2E4B9E", "gold": "#E8C766", "icon": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230C1440'/%3E%3Ctext x='50' y='68' font-size='58' text-anchor='middle' fill='%23E8C766'%3E%E2%99%9B%3C/text%3E%3C/svg%3E"}, {"id": "train", "name": "Mexican Train", "desc": "Count the pips left; first one out marks the train.", "bg": "#17100C", "accent": "#B98A55", "gold": "#F4ECDA", "icon": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%2317100C'/%3E%3Crect x='26' y='14' width='48' height='72' rx='10' fill='%23F4ECDA'/%3E%3Cline x1='30' y1='50' x2='70' y2='50' stroke='%23B98A55' stroke-width='3'/%3E%3Ccircle cx='50' cy='32' r='5' fill='%23221510'/%3E%3Ccircle cx='40' cy='64' r='5' fill='%23221510'/%3E%3Ccircle cx='60' cy='72' r='5' fill='%23221510'/%3E%3C/svg%3E"}];
-  var deck = document.getElementById('deck');
+  var CARDS  = [{"id": "wizard", "name": "Wizard", "desc": "Bid your tricks, then land the number exactly.", "accent": "#7B67D9", "icon": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%2314102A'/%3E%3Cpath d='M50 14 L64 52 L36 52 Z' fill='%237B67D9'/%3E%3Cpath d='M28 56 Q50 46 72 56 L72 64 Q50 56 28 64 Z' fill='%23E9C15C'/%3E%3Ctext x='50' y='90' font-size='26' text-anchor='middle' fill='%23E9C15C'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E"}, {"id": "crowns", "name": "Five Crowns", "desc": "Eleven rounds, the wild climbs with every deal.", "accent": "#2E4B9E", "icon": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230C1440'/%3E%3Ctext x='50' y='68' font-size='58' text-anchor='middle' fill='%23E8C766'%3E%E2%99%9B%3C/text%3E%3C/svg%3E"}, {"id": "train", "name": "Mexican Train", "desc": "Count the pips left; first one out marks the train.", "accent": "#B98A55", "icon": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%2317100C'/%3E%3Crect x='26' y='14' width='48' height='72' rx='10' fill='%23F4ECDA'/%3E%3Cline x1='30' y1='50' x2='70' y2='50' stroke='%23B98A55' stroke-width='3'/%3E%3Ccircle cx='50' cy='32' r='5' fill='%23221510'/%3E%3Ccircle cx='40' cy='64' r='5' fill='%23221510'/%3E%3Ccircle cx='60' cy='72' r='5' fill='%23221510'/%3E%3C/svg%3E"}];
+  var deck   = document.getElementById('deck');
+  var hub    = document.getElementById('hub');
   var player = document.getElementById('player');
   var frames = document.getElementById('frames');
-  var frameTitle = document.getElementById('frameTitle');
-  var made = {};      // gid -> iframe (lazily created)
-  var current = null;
+  var title  = document.getElementById('frameTitle');
+  var backBtn= document.getElementById('backBtn');
+  var made   = {};       // gid -> iframe, created on first open
+  var current= null;     // gid currently showing, or null for the hub
+  var lastBack = 0;      // guards against pointerdown+click firing twice on one tap
 
-  // Build launcher cards
+  function byId(id){
+    for(var i=0;i<CARDS.length;i++){ if(CARDS[i].id === id) return CARDS[i]; }
+    return null;
+  }
+
+  // ---------- launcher ----------
   CARDS.forEach(function(c){
     var b = document.createElement('button');
     b.className = 'game';
+    b.type = 'button';
     b.style.setProperty('--accent', c.accent);
     b.innerHTML =
       '<img class="ic" alt="" src="' + c.icon + '">' +
@@ -3072,61 +3088,115 @@
   });
 
   function unescapeDoc(txt){
-    // Reverse the build-time escaping of the closing script tag.
     return txt.split('<\\/script>').join('<\/script>');
   }
 
-  function openGame(c){
+  // Dismiss the on-screen keyboard and drop focus out of the game frame.
+  // Without this the first tap on the parent is spent closing the keyboard.
+  function releaseFocus(){
+    try{
+      var f = current && made[current];
+      if(f && f.contentDocument){
+        var ae = f.contentDocument.activeElement;
+        if(ae && ae.blur) ae.blur();
+      }
+    }catch(e){}
+    try{ if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); }catch(e){}
+  }
+
+  // ---------- views (both synchronous and idempotent) ----------
+  function openGame(c, fromHistory){
     if(!made[c.id]){
       var tpl = document.getElementById('doc-' + c.id);
       var f = document.createElement('iframe');
       f.setAttribute('title', c.name + ' scorekeeper');
       f.srcdoc = unescapeDoc(tpl.textContent);
+      // Escape from inside the game too (desktop keyboards).
+      f.addEventListener('load', function(){
+        try{
+          f.contentDocument.addEventListener('keydown', function(e){
+            if(e.key === 'Escape' || e.keyCode === 27) goBack();
+          });
+        }catch(e){}
+      });
       frames.appendChild(f);
       made[c.id] = f;
     }
     Object.keys(made).forEach(function(k){ made[k].classList.toggle('on', k === c.id); });
     current = c.id;
-    frameTitle.textContent = c.name;
+    title.textContent = c.name;
     document.title = c.name + ' \u00B7 Scorekeeper';
+    hub.style.display = 'none';
     player.classList.add('on');
-    player.setAttribute('aria-hidden', 'false');
-    document.getElementById('hub').style.display = 'none';
-    if(history.state == null || history.state.game !== c.id){
-      history.pushState({game:c.id}, '', '#' + c.id);
+    player.setAttribute('aria-hidden','false');
+    if(!fromHistory){
+      try{ history.pushState({game:c.id}, '', '#' + c.id); }catch(e){}
     }
+    lastBack = 0;   // a fresh game means the next tap on Games is always allowed
+    syncViewport();
     window.scrollTo(0,0);
   }
 
   function showHub(){
-    player.classList.remove('on');
-    player.setAttribute('aria-hidden', 'true');
-    document.getElementById('hub').style.display = '';
     current = null;
-    frameTitle.textContent = '';
-    document.title = 'Card Table \u00B7 Scorekeepers';
+    Object.keys(made).forEach(function(k){ made[k].classList.remove('on'); });
+    player.classList.remove('on');
+    player.setAttribute('aria-hidden','true');
+    hub.style.display = '';
+    title.textContent = '';
+    document.title = 'Card Table \u00B7 Scorekeeper';
+    player.style.height = ''; player.style.top = '';
   }
 
-  document.getElementById('backBtn').addEventListener('click', function(){
-    if(history.state && history.state.game){ history.back(); }
-    else showHub();
+  // ---------- back ----------
+  // The view changes immediately; history is tidied up afterwards on a best-effort
+  // basis, so a swallowed popstate can never leave you stuck inside a game.
+  function goBack(){
+    var now = Date.now();
+    if(now - lastBack < 400) return;   // de-dupe pointerdown + click (same tap)
+    lastBack = now;
+    if(!current && !player.classList.contains('on')) return;
+    releaseFocus();
+    showHub();
+    try{ if(history.state && history.state.game) history.back(); }catch(e){}
+  }
+
+  // pointerdown fires on the very first touch, before focus/keyboard handling
+  // can consume it; click stays as the fallback for older browsers.
+  backBtn.addEventListener('pointerdown', function(e){ e.preventDefault(); goBack(); });
+  backBtn.addEventListener('click',       function(e){ e.preventDefault(); goBack(); });
+  document.addEventListener('keydown', function(e){
+    if((e.key === 'Escape' || e.keyCode === 27) && current) goBack();
   });
 
-  // Hardware/browser back returns to the hub instead of leaving the app.
+  // Hardware / browser back returns to the hub instead of leaving the app.
   window.addEventListener('popstate', function(e){
-    if(e.state && e.state.game){
-      var c = CARDS.filter(function(x){ return x.id === e.state.game; })[0];
-      if(c) openGame(c);
-    }else{
-      showHub();
-    }
+    var id = e.state && e.state.game;
+    if(id){ var c = byId(id); if(c){ openGame(c, true); return; } }
+    showHub();
   });
 
-  // Deep link support: #wizard etc.
-  (function initFromHash(){
+  // ---------- keep the bar on screen when the keyboard opens ----------
+  var vv = window.visualViewport;
+  function syncViewport(){
+    if(!vv) return;
+    if(!current){ player.style.height = ''; player.style.top = ''; return; }
+    player.style.height = vv.height + 'px';
+    player.style.top    = (vv.offsetTop || 0) + 'px';
+  }
+  if(vv){
+    vv.addEventListener('resize', syncViewport);
+    vv.addEventListener('scroll', syncViewport);
+  }
+
+  // ---------- deep links (#wizard, #crowns, #train) ----------
+  (function(){
     var id = (location.hash || '').replace('#','');
-    var c = CARDS.filter(function(x){ return x.id === id; })[0];
-    if(c){ history.replaceState(null,'',location.pathname); openGame(c); }
+    var c = byId(id);
+    if(c){
+      try{ history.replaceState(null, '', location.pathname); }catch(e){}
+      openGame(c);
+    }
   })();
 })();
 </script>
