@@ -1069,12 +1069,20 @@
   html,body{height:100%;}
   body{
     font-family:var(--body);
-    background:
-      radial-gradient(ellipse 140% 70% at 50% -20%, var(--royal-glow) 0%, var(--royal) 40%, var(--royal-deep) 100%);
-    background-attachment:fixed;
+    background:var(--royal-deep);
     color:var(--card);
     min-height:100vh;
-    padding:22px 14px 60px;
+    padding:22px 14px calc(60px + env(safe-area-inset-bottom));
+  }
+  /* Fixed backdrop as a pseudo-element instead of background-attachment:fixed.
+     On iOS Safari, background-attachment:fixed is painted at the wrong size
+     (worst after rotation and inside an iframe), leaving an unpainted strip at
+     the bottom in landscape that shows the dark iframe backing as a black bar.
+     A position:fixed layer avoids that bug entirely. */
+  body::before{
+    content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:
+      radial-gradient(ellipse 140% 70% at 50% -20%, var(--royal-glow) 0%, var(--royal) 40%, var(--royal-deep) 100%);
   }
   .shell{max-width:680px; margin:0 auto;}
 
