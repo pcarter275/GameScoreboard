@@ -400,6 +400,23 @@
   .hrow b{color:var(--gold);}
   .hidden{display:none !important;}
   .footactions{margin-top:22px;}
+  .standnote{font-size:12.5px; color:var(--text-faint); font-weight:600; margin:-6px 0 6px;}
+
+  /* ---------- Scoresheet ---------- */
+  .sheetwrap{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -6px;}
+  table.sheet{border-collapse:collapse; width:100%; font-size:13px; font-variant-numeric:tabular-nums;}
+  .sheet th, .sheet td{padding:6px 5px; text-align:center; border-bottom:1px solid var(--line-soft); white-space:nowrap;}
+  .sheet thead th{color:var(--text-soft); font-weight:800; font-size:12px; letter-spacing:.03em; max-width:72px; overflow:hidden; text-overflow:ellipsis;}
+  .sheet th.rn{color:var(--text-faint); font-weight:700; text-align:left; font-size:12px;}
+  .sheet td .pts{display:block; font-weight:800; font-size:14px;}
+  .sheet td .bw{display:block; font-size:10.5px; color:var(--text-faint); font-weight:600;}
+  .sheet td.hit .pts{color:var(--gold);}
+  .sheet td.miss .pts{color:var(--miss);}
+  .sheet td.open{color:var(--text-faint);}
+  .sheet tr.cur th.rn{color:var(--gold);}
+  .sheet tfoot td, .sheet tfoot th{border-bottom:none; border-top:1.5px solid var(--line); font-family:var(--display); font-weight:700; font-size:15px; padding-top:9px;}
+  .sheet tfoot td.neg{color:var(--miss);}
+  .sheet tfoot td.top{color:var(--gold);}
 </style>
 </head>
 <body>
@@ -468,7 +485,13 @@
 
     <div class="card">
       <h2>Standings</h2>
+      <p class="standnote" id="standNote"></p>
       <div class="stand" id="standings"></div>
+    </div>
+
+    <div class="card">
+      <h2>Scoresheet</h2>
+      <div class="sheetwrap" id="sheet"></div>
     </div>
 
     <div class="footactions">
@@ -489,7 +512,12 @@
       <h2>Final Standings</h2>
       <div class="stand" id="finalStandings"></div>
     </div>
+    <div class="card">
+      <h2>Scoresheet</h2>
+      <div class="sheetwrap" id="finalSheet"></div>
+    </div>
     <button class="btn btn-gold" id="rematchBtn" type="button">Rematch — same table</button>
+    <button class="btn btn-quiet" id="reopenBtn" type="button">Fix a mistake — back to the rounds</button>
     <button class="btn btn-quiet" id="freshBtn" type="button">New game, new players</button>
   </section>
 
@@ -525,6 +553,8 @@
   }
   var state = freshState();
   var viewRound = 0;
+  var activeRound = 0;   // the round play has reached; edits here never prompt
+  var unlockedRound = -1; // an earlier finished round the table agreed to edit
 
   // ---------- Storage ----------
   var canStore = true;
@@ -607,6 +637,15 @@
       for(var i=0;i<t.length;i++) t[i] += scoreFor(rd.bids[i], rd.tricks[i]);
     }
     return t;
+  }
+  function leadersOf(t){
+    var top = Math.max.apply(null, t), out = [];
+    for(var i=0;i<t.length;i++) if(t[i] === top) out.push(i);
+    return out;
+  }
+  function namesJoined(ix){
+    var n = ix.map(displayName);
+    return n.length <= 1 ? (n[0] || '') : n.slice(0,-1).join(', ') + ' & ' + n[n.length-1];
   }
   function lastCompleteRound(){
     var last = -1;
@@ -733,7 +772,7 @@
       deal.title = 'Dealer: ' + displayName(dealerFor(r));
       c.appendChild(deal);
       c.setAttribute('aria-label', 'Round ' + (r+1) + ', ' + cardsIn(r) + ' cards');
-      c.addEventListener('click', function(){ viewRound = r; render(); });
+      c.addEventListener('click', function(){ goToRound(r); });
       rail.appendChild(c);
     });
     var target = rail.children[viewRound];
@@ -750,12 +789,26 @@
       (function(val){
         var ch = el('button', 'chip' + (selected === val ? ' ' + cls : ''), String(val));
         ch.type = 'button';
-        ch.addEventListener('click', function(){ onPick(selected === val ? null : val); });
+        ch.addEventListener('click', function(){ if(selected !== val) onPick(val); });
         chips.appendChild(ch);
       })(v);
     }
     wrap.appendChild(chips);
     return wrap;
+  }
+
+  // A finished round that play has moved past only changes after the table agrees,
+  // so a stray tap while scrolling back can't quietly rewrite the totals.
+  function okToEdit(r){
+    if(r === activeRound || r === unlockedRound || !roundComplete(r)) return true;
+    if(!confirm('Round ' + (r+1) + ' is already scored. Change it? Totals will update.')) return false;
+    unlockedRound = r;
+    return true;
+  }
+  function goToRound(r){
+    viewRound = r;
+    if(r !== unlockedRound) unlockedRound = -1;
+    render();
   }
 
   function renderRound(){
@@ -811,9 +864,11 @@
       row.appendChild(top);
 
       row.appendChild(chipsRow('Bid', cards, rd.bids[i], 'bid-on', function(v){
+        if(!okToEdit(r)) return;
         rd.bids[i] = v; render(); saveDebounced();
       }));
       row.appendChild(chipsRow('Won', cards, rd.tricks[i], 'trk-on', function(v){
+        if(!okToEdit(r)) return;
         rd.tricks[i] = v; render(); saveDebounced();
       }));
       box.appendChild(row);
@@ -851,18 +906,21 @@
     var t = totals();
     var lastR = lastCompleteRound();
     var order = state.players.map(function(_, i){ return i; })
-      .sort(function(a, b){ return t[b] - t[a]; });
+      .sort(function(a, b){ return t[b] - t[a] || a - b; });
     var top = order.length ? t[order[0]] : 0;
+    var rank = 0;
     order.forEach(function(i, pos){
-      var row = el('div', 'srow' + (pos === 0 && lastR >= 0 ? ' lead' : ''));
-      row.appendChild(el('span', 'srank', pos === 0 ? '✦' : String(pos+1)));
+      if(pos === 0 || t[i] !== t[order[pos-1]]) rank = pos + 1;   // ties share a place
+      var leads = rank === 1;
+      var row = el('div', 'srow' + (leads && lastR >= 0 ? ' lead' : ''));
+      row.appendChild(el('span', 'srank', leads ? '✦' : String(rank)));
       row.appendChild(avatar(i, true));
       var nm = el('div', 'sname');
       nm.textContent = displayName(i);
-      if(pos > 0 && lastR >= 0){
+      if(!leads && lastR >= 0){
         var be = el('div', 'sbehind', (top - t[i]) + ' behind');
         nm.appendChild(be);
-      }else if(lastR >= 0 && mountId === 'standings'){
+      }else if(lastR >= 0 && mountId === 'standings' && roundComplete(lastR)){
         var rd = state.rounds[lastR];
         var last = scoreFor(rd.bids[i], rd.tricks[i]);
         nm.appendChild(el('div', 'slast', 'last round ' + (last > 0 ? '+' : '') + last));
@@ -872,16 +930,75 @@
       row.appendChild(tot);
       box.appendChild(row);
     });
+    if(mountId === 'standings'){
+      var done = 0;
+      for(var r=0;r<state.rounds.length;r++) if(roundComplete(r)) done++;
+      var cur = currentRound();
+      var note = done + ' of ' + state.rounds.length + ' rounds counted';
+      if(cur < state.rounds.length) note += ' \u00b7 round ' + (cur+1) + ' adds in once every bid and trick is entered';
+      document.getElementById('standNote').textContent = note;
+    }
+  }
+
+  // ---------- Render: scoresheet ----------
+  function renderSheet(mountId){
+    var box = document.getElementById(mountId);
+    box.innerHTML = '';
+    var tbl = el('table', 'sheet');
+    var thead = el('thead'), hr = el('tr');
+    hr.appendChild(el('th', 'rn', 'Rd'));
+    state.players.forEach(function(_, i){ var th = el('th', '', displayName(i)); th.title = displayName(i); hr.appendChild(th); });
+    thead.appendChild(hr); tbl.appendChild(thead);
+    var tb = el('tbody');
+    var cur = currentRound();
+    state.rounds.forEach(function(rd, r){
+      var tr = el('tr', r === cur && state.phase === 'play' ? 'cur' : '');
+      tr.appendChild(el('th', 'rn', String(r+1)));
+      var complete = roundComplete(r);
+      state.players.forEach(function(_, i){
+        var b = rd.bids[i], k = rd.tricks[i];
+        var td;
+        if(complete){
+          var sc = scoreFor(b, k);
+          td = el('td', sc > 0 ? 'hit' : 'miss');
+          td.appendChild(el('span', 'pts', (sc > 0 ? '+' : '') + sc));
+          td.appendChild(el('span', 'bw', b + '/' + k));
+        }else{
+          td = el('td', 'open');
+          td.appendChild(el('span', 'pts', '\u2014'));
+          td.appendChild(el('span', 'bw', (b === null ? '\u00b7' : b) + '/' + (k === null ? '\u00b7' : k)));
+        }
+        tr.appendChild(td);
+      });
+      if(state.phase === 'play'){
+        tr.style.cursor = 'pointer';
+        tr.addEventListener('click', function(){ goToRound(r); window.scrollTo({top:0, behavior:'smooth'}); });
+      }
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+    var t = totals(), lead = leadersOf(t);
+    var tf = el('tfoot'), fr = el('tr');
+    fr.appendChild(el('th', 'rn', 'Tot'));
+    t.forEach(function(v, i){
+      fr.appendChild(el('td', lead.indexOf(i) >= 0 && lastCompleteRound() >= 0 ? 'top' : (v < 0 ? 'neg' : ''), String(v)));
+    });
+    tf.appendChild(fr); tbl.appendChild(tf);
+    var key = el('p', 'standnote', 'Each box: points, then bid/won.');
+    key.style.margin = '8px 6px 0';
+    box.appendChild(tbl); box.appendChild(key);
   }
 
   // ---------- Render: done ----------
   function renderDone(){
     var t = totals();
-    var win = 0;
-    for(var i=1;i<t.length;i++){ if(t[i] > t[win]) win = i; }
-    document.getElementById('winName').textContent = displayName(win);
-    document.getElementById('winScore').textContent = t[win] + ' points across ' + state.rounds.length + ' rounds';
+    var win = leadersOf(t);
+    document.getElementById('winName').textContent = namesJoined(win);
+    document.getElementById('winScore').textContent = win.length > 1
+      ? 'Tied at ' + t[win[0]] + ' points each across ' + state.rounds.length + ' rounds'
+      : t[win[0]] + ' points across ' + state.rounds.length + ' rounds';
     renderStandings('finalStandings');
+    renderSheet('finalSheet');
   }
 
   // ---------- Master render ----------
@@ -893,7 +1010,7 @@
     p.classList.toggle('hidden', state.phase !== 'play');
     d.classList.toggle('hidden', state.phase !== 'done');
     if(state.phase === 'setup') renderSetup();
-    if(state.phase === 'play'){ renderRail(); renderRound(); renderStandings('standings'); }
+    if(state.phase === 'play'){ renderRail(); renderRound(); renderStandings('standings'); renderSheet('sheet'); }
     if(state.phase === 'done') renderDone();
   }
 
@@ -917,7 +1034,8 @@
       });
     }
     state.phase = 'play';
-    viewRound = 0;
+    viewRound = activeRound = 0;
+    unlockedRound = -1;
     render(); saveNow();
     window.scrollTo({top:0, behavior:'smooth'});
   });
@@ -938,17 +1056,33 @@
       var t = totals();
       var order = state.players.map(function(_, i){ return i; })
         .sort(function(a, b){ return t[b] - t[a]; });
+      var w = leadersOf(t);
       state.history.push({
         date: new Date().toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'}),
-        winner: displayName(order[0]),
+        winner: namesJoined(w) + (w.length > 1 ? ' (tie)' : ''),
         lines: order.map(function(i){ return {name: displayName(i), score: t[i]}; })
       });
+      state.archivedIdx = state.history.length - 1;
       state.phase = 'done';
       render(); saveNow();
       window.scrollTo({top:0, behavior:'smooth'});
       return;
     }
-    viewRound = cur;
+    viewRound = activeRound = cur;
+    unlockedRound = -1;
+    render(); saveNow();
+    window.scrollTo({top:0, behavior:'smooth'});
+  });
+
+  document.getElementById('reopenBtn').addEventListener('click', function(){
+    // Pull this game back out of Past Games; finishing again re-records it.
+    if(typeof state.archivedIdx === 'number' && state.history[state.archivedIdx]){
+      state.history.splice(state.archivedIdx, 1);
+    }
+    delete state.archivedIdx;
+    state.phase = 'play';
+    viewRound = activeRound = state.rounds.length - 1;
+    unlockedRound = -1;
     render(); saveNow();
     window.scrollTo({top:0, behavior:'smooth'});
   });
@@ -1023,6 +1157,7 @@
   loadSaved();
   viewRound = state.phase === 'play' ? Math.min(currentRound(), state.rounds.length - 1) : 0;
   if(viewRound < 0) viewRound = 0;
+  activeRound = viewRound;
   render();
 })();
 <\/script>
